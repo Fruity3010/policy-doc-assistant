@@ -12,6 +12,14 @@ export function citedPages(citation: string): number[] {
   return pages.map(Number);
 }
 
+function citedDocument(citation: string): string {
+  return citation.slice(1, citation.search(/,\s*pp?\./)).replace(/\.pdf$/i, "");
+}
+
+function citedPageLabel(citation: string): string {
+  return citation.slice(citation.search(/,\s*pp?\./), -1);
+}
+
 type Props = {
   text: string;
   onCite?: (pages: number[]) => void;
@@ -26,15 +34,17 @@ export default function Answer({ text, onCite }: Props) {
             key={`${key}-c${i}`}
             type="button"
             onClick={() => onCite?.(citedPages(part))}
-            className="mx-0.5 inline-flex translate-y-[-1px] items-center rounded bg-accent/10 px-1.5 py-0.5 align-middle text-[11px] font-medium whitespace-nowrap text-accent tabular-nums transition hover:bg-accent/20"
+            title={part.slice(1, -1)}
+            className="mx-0.5 inline rounded bg-brand-50 px-1 py-0.5 text-xs font-medium whitespace-nowrap text-brand-700 hover:bg-brand-100"
           >
-            {part.slice(1, -1)}
+            <span className="inline-block max-w-[9rem] truncate align-bottom">{citedDocument(part)}</span>
+            {citedPageLabel(part)}
           </button>
         );
       }
       return part.split(BOLD).map((seg, j) =>
         j % 2 === 1 ? (
-          <strong key={`${key}-b${i}-${j}`} className="font-semibold text-neutral-900">
+          <strong key={`${key}-b${i}-${j}`} className="font-semibold text-gray-700">
             {seg.slice(2, -2)}
           </strong>
         ) : (
@@ -62,11 +72,11 @@ export default function Answer({ text, onCite }: Props) {
       const items = list.items.map((item, i) => <li key={i}>{inline(item, `${k}-${i}`)}</li>);
       blocks.push(
         list.ordered ? (
-          <ol key={k} className="list-decimal space-y-1.5 pl-5 marker:text-neutral-400">
+          <ol key={k} className="list-decimal space-y-1.5 pl-5 marker:text-gray-400">
             {items}
           </ol>
         ) : (
-          <ul key={k} className="list-disc space-y-1.5 pl-5 marker:text-accent">
+          <ul key={k} className="list-disc space-y-1.5 pl-5 marker:text-gray-400">
             {items}
           </ul>
         ),
@@ -89,7 +99,7 @@ export default function Answer({ text, onCite }: Props) {
       flushList();
       const k = `h${blocks.length}`;
       blocks.push(
-        <p key={k} className="font-semibold text-neutral-900">
+        <p key={k} className="font-semibold text-gray-700">
           {inline(line.replace(HEADING, ""), k)}
         </p>,
       );

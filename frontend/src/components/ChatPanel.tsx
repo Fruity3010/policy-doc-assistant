@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ChatMessage } from "../api";
 import MessageBubble from "./MessageBubble";
 import { AlertIcon, CloseIcon, SendIcon } from "./icons";
-import { dashed, micro, panel } from "./tokens";
 
 const EXAMPLES = [
-  { title: "Trends", question: "What are the main cybercrime trends described?" },
-  { title: "Recommendations", question: "Summarise the key recommendations." },
-  { title: "Regions", question: "Which regions are most affected?" },
+  "What are the main cybercrime trends described?",
+  "Summarise the key recommendations.",
+  "Which regions are most affected?",
 ];
 
 type Props = {
@@ -46,38 +45,33 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+        <div className="mx-auto flex max-w-3xl flex-col gap-4">
           {messages.length === 0 ? (
-            <div className="mx-auto mt-4 w-full max-w-2xl sm:mt-12">
-              <p className={`blur-in ${micro}`}>Grounded answers · page citations</p>
-              <h1 className="blur-in mt-3 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl" style={{ "--d": "0.08s" } as CSSProperties}>
-                Ask your <span className="text-accent">documents</span>.
-              </h1>
-              <p className="blur-in mt-3 max-w-lg text-[15px] text-neutral-500" style={{ "--d": "0.16s" } as CSSProperties}>
+            <div className="rounded-xl border border-gray-200 bg-white p-6 sm:p-8">
+              <h1 className="text-lg font-semibold text-gray-700">Ask a question</h1>
+              <p className="mt-1 text-sm text-gray-500">
                 {hasDocuments
-                  ? "Every answer comes only from your uploaded PDFs and cites the page it came from. If it isn't in the documents, it says so."
-                  : "Upload a PDF report in the library to get started. Answers will come only from your documents, with page citations."}
+                  ? "Answers come only from your uploaded documents, with the page each fact came from. If the answer isn't in them, you'll be told."
+                  : "Upload a PDF on the left to get started. Answers will come only from your documents, with page references."}
               </p>
               {hasDocuments && (
-                <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                  {EXAMPLES.map((ex, i) => (
-                    <button
-                      key={ex.title}
-                      type="button"
-                      onClick={() => onAsk(ex.question)}
-                      disabled={streaming}
-                      style={{ "--d": `${0.24 + i * 0.08}s` } as CSSProperties}
-                      className={`blur-in group ${panel} p-4 text-left transition hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-md hover:shadow-neutral-200 disabled:opacity-50`}
-                    >
-                      <p className={micro}>
-                        <span className="tabular-nums">0{i + 1}</span> · {ex.title}
-                      </p>
-                      <p className={`my-3 ${dashed}`} />
-                      <p className="text-sm text-neutral-700 group-hover:text-neutral-900">{ex.question}</p>
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <p className="mt-6 mb-2 text-xs font-medium text-gray-400">Try asking</p>
+                  <div className="flex flex-col gap-2">
+                    {EXAMPLES.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => onAsk(q)}
+                        disabled={streaming}
+                        className="rounded-lg border border-gray-200 px-4 py-2.5 text-left text-sm text-gray-600 transition hover:border-brand-100 hover:bg-brand-25 hover:text-brand-500 disabled:opacity-50"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           ) : (
@@ -87,13 +81,10 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
         </div>
       </div>
 
-      <div className="px-4 pb-4 sm:px-8">
+      <div className="border-t border-gray-200 bg-white px-4 py-4 sm:px-8">
         <div className="mx-auto max-w-3xl">
           {error && (
-            <div
-              role="alert"
-              className="rise mb-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-800"
-            >
+            <div role="alert" className="mb-3 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-700">
               <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="flex-1">{error}</p>
               <button type="button" onClick={onDismissError} aria-label="Dismiss error" className="rounded p-0.5 hover:bg-red-100">
@@ -101,10 +92,7 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
               </button>
             </div>
           )}
-          <form
-            onSubmit={submit}
-            className="flex items-end gap-2 rounded-xl border border-neutral-200 bg-white p-2 shadow-sm transition focus-within:border-accent/50 focus-within:ring-4 focus-within:ring-accent/10"
-          >
+          <form onSubmit={submit} className="flex items-end gap-3">
             <textarea
               ref={textareaRef}
               value={input}
@@ -117,22 +105,19 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
               }}
               rows={1}
               maxLength={2000}
-              placeholder={hasDocuments ? "Ask about your documents…" : "Upload a document first…"}
+              placeholder={hasDocuments ? "Ask about your documents" : "Upload a document first"}
               aria-label="Question"
-              className="max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-[15px] text-neutral-900 outline-none placeholder:text-neutral-400"
+              className="max-h-40 min-h-11 flex-1 resize-none rounded-lg border-[1.5px] border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-brand-500 focus:shadow-[0_0_0_3px_rgba(36,100,241,0.15)]"
             />
             <button
               type="submit"
               disabled={streaming || !input.trim()}
-              aria-label="Send"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-accent text-white transition hover:brightness-110 disabled:bg-neutral-100 disabled:text-neutral-400"
+              className="flex h-11 shrink-0 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:bg-brand-100 disabled:text-white"
             >
-              <SendIcon className="h-5 w-5" />
+              <SendIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">{streaming ? "Answering" : "Send"}</span>
             </button>
           </form>
-          <p className={`mt-2.5 hidden text-center sm:block ${micro}`}>
-            Enter to send · Shift + Enter for new line · Check citations before relying on an answer
-          </p>
         </div>
       </div>
     </main>

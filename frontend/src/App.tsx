@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type ChatMessage, type DocumentInfo, type Health } from "./api";
-import DocumentSidebar, { Brand } from "./components/DocumentSidebar";
+import DocumentSidebar from "./components/DocumentSidebar";
 import ChatPanel from "./components/ChatPanel";
-import { AlertIcon, PlusIcon } from "./components/icons";
-import { micro } from "./components/tokens";
+import { AlertIcon, DocIcon, MenuIcon, PlusIcon } from "./components/icons";
 
 const SESSION_KEY = "pda-session-id";
 
@@ -135,65 +134,56 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-canvas text-neutral-900 md:flex-row">
-      <header className="flex h-14 shrink-0 items-center gap-2 bg-ink px-4 md:hidden">
-        <Brand />
-        <div className="ml-auto flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((o) => !o)}
-            aria-expanded={sidebarOpen}
-            className="rounded-lg px-2.5 py-1.5 text-sm font-medium whitespace-nowrap text-white/80 ring-1 ring-white/20 transition hover:bg-white/10"
-          >
-            Library <span className="tabular-nums">{documents.length}</span>
-          </button>
+    <div className="flex h-dvh flex-col bg-gray-50">
+      <header className="flex h-14 shrink-0 items-center gap-3 bg-navy px-4 text-white sm:px-6">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen((o) => !o)}
+          aria-expanded={sidebarOpen}
+          aria-label="Toggle documents"
+          className="grid h-9 w-9 place-items-center rounded-lg text-gray-300 hover:bg-navy-light md:hidden"
+        >
+          <MenuIcon className="h-5 w-5" />
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-md bg-brand-500">
+            <DocIcon className="h-4 w-4" />
+          </span>
+          <span className="text-base font-bold">Policy Docs</span>
+        </div>
+        <nav aria-label="Breadcrumb" className="ml-6 hidden items-center gap-2 text-sm lg:flex">
+          <span className="text-gray-400">Workspace</span>
+          <span className="text-gray-500">/</span>
+          <span className="font-medium text-white">Document Q&amp;A</span>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-4">
+          <ProviderStatus health={health} />
+          <span className="hidden h-8 w-px bg-white/15 sm:block" />
           <button
             type="button"
             onClick={newChat}
-            aria-label="New chat"
-            className="grid h-8 w-8 place-items-center rounded-lg bg-white text-ink"
+            className="flex items-center gap-1.5 rounded-lg bg-navy-light px-3 py-2 text-sm font-medium text-white transition hover:bg-white/15"
           >
             <PlusIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">New chat</span>
           </button>
         </div>
       </header>
 
-      <DocumentSidebar
-        className={sidebarOpen ? "flex" : "hidden md:flex"}
-        health={health}
-        documents={documents}
-        loading={docsLoading}
-        uploading={uploading}
-        error={docError}
-        onUpload={uploadFiles}
-        onDelete={deleteDocument}
-      />
+      {health?.index_warning && <Banner tone="amber">{health.index_warning}</Banner>}
+      {health?.error && <Banner tone="red">{health.error}</Banner>}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="hidden h-16 shrink-0 items-center gap-3 border-b border-neutral-200 bg-white/95 px-6 backdrop-blur md:flex">
-          <div className="min-w-0">
-            <p className={micro}>Workspace</p>
-            <p className="truncate text-[0.9375rem] font-semibold tracking-tight">Document Q&amp;A</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <StatusChip health={health} />
-            <button
-              type="button"
-              onClick={newChat}
-              className="flex items-center gap-2 rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50"
-            >
-              <PlusIcon className="h-4 w-4" />
-              New chat
-            </button>
-          </div>
-        </div>
-
-        {health?.index_warning && <Banner tone="amber">{health.index_warning}</Banner>}
-        {health?.error && <Banner tone="red">{health.error}</Banner>}
-        <div className="flex px-4 pt-3 md:hidden">
-          <StatusChip health={health} />
-        </div>
-
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <DocumentSidebar
+          className={sidebarOpen ? "flex" : "hidden md:flex"}
+          documents={documents}
+          loading={docsLoading}
+          uploading={uploading}
+          error={docError}
+          onUpload={uploadFiles}
+          onDelete={deleteDocument}
+        />
         <ChatPanel
           messages={messages}
           streaming={streaming}
@@ -208,31 +198,27 @@ export default function App() {
 }
 
 function Banner({ tone, children }: { tone: "amber" | "red"; children: React.ReactNode }) {
-  const styles = tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-red-200 bg-red-50 text-red-800";
+  const styles = tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-red-200 bg-red-50 text-red-700";
   return (
-    <div role="alert" className={`flex items-start gap-2 border-b px-4 py-2.5 text-sm md:px-6 ${styles}`}>
+    <div role="alert" className={`flex items-start gap-2 border-b px-4 py-2.5 text-sm sm:px-6 ${styles}`}>
       <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{children}</span>
     </div>
   );
 }
 
-function StatusChip({ health }: { health: Health | null }) {
-  const state = !health
-    ? { text: "API offline", chip: "border-red-300 bg-red-50 text-red-900", dot: "bg-red-500" }
-    : health.status === "ok"
-      ? { text: `${health.provider} · online`, chip: "border-emerald-300 bg-emerald-50 text-emerald-900", dot: "bg-emerald-500" }
-      : { text: `${health.provider} · not configured`, chip: "border-amber-300 bg-amber-50 text-amber-900", dot: "bg-amber-500" };
+function ProviderStatus({ health }: { health: Health | null }) {
+  const ok = health?.status === "ok";
+  const dot = !health ? "bg-red-500" : ok ? "bg-success" : "bg-amber-400";
+  const label = !health ? "API offline" : ok ? health.provider : `${health.provider} not configured`;
   return (
-    <span
-      title={health?.status === "ok" ? `Chat: ${health.chat_model}\nEmbeddings: ${health.embedding_model}` : (health?.error ?? "")}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded border px-2 py-1 text-[0.6875rem] font-semibold tracking-wider uppercase ${state.chip}`}
+    <div
+      className="flex items-center gap-2 text-sm"
+      title={ok ? `Chat: ${health?.chat_model}\nEmbeddings: ${health?.embedding_model}` : (health?.error ?? "Can't reach the API")}
     >
-      <span className="relative flex h-1.5 w-1.5">
-        {health?.status === "ok" && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />}
-        <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${state.dot}`} />
-      </span>
-      {state.text}
-    </span>
+      <span className={`h-2 w-2 rounded-full ring-2 ring-white/20 ${dot}`} />
+      <span className="font-medium capitalize">{label}</span>
+      {ok && <span className="hidden text-gray-400 md:inline">{health?.chat_model}</span>}
+    </div>
   );
 }

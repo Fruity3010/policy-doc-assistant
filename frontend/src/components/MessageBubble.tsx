@@ -1,16 +1,15 @@
 import { useState } from "react";
 import type { ChatMessage, Source } from "../api";
 import Answer from "./Answer";
-import { DocIcon, SparkIcon, TypingDots } from "./icons";
-import { dashed, micro, panel } from "./tokens";
+import { ChevronDownIcon, Spinner } from "./icons";
 
 export default function MessageBubble({ message, pending }: { message: ChatMessage; pending: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
 
   if (message.role === "user") {
     return (
-      <div className="rise flex justify-end">
-        <p className="max-w-[85%] rounded-2xl rounded-br-md bg-ink px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap text-white">
+      <div className="flex justify-end">
+        <p className="max-w-[85%] rounded-xl rounded-br-sm border border-brand-100 bg-brand-50 px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap text-brand-900">
           {message.content}
         </p>
       </div>
@@ -23,25 +22,20 @@ export default function MessageBubble({ message, pending }: { message: ChatMessa
   }
 
   return (
-    <div className="rise flex gap-3">
-      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent text-white">
-        <SparkIcon className="h-4 w-4" />
-      </span>
-      <div className={`min-w-0 flex-1 overflow-hidden ${panel}`}>
-        <div className="px-4 py-3.5 text-[15px] leading-relaxed text-neutral-700">
-          {message.content ? (
-            <>
-              <Answer text={message.content} onCite={openPage} />
-              {pending && <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-accent align-middle" />}
-            </>
-          ) : pending ? (
-            <div className="flex items-center gap-3 py-0.5 text-sm text-neutral-500">
-              <TypingDots /> Searching your documents…
-            </div>
-          ) : null}
-        </div>
-        {message.sources.length > 0 && <SourceList sources={message.sources} open={open} setOpen={setOpen} />}
+    <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="px-5 py-4 text-[15px] leading-relaxed text-gray-600">
+        {message.content ? (
+          <>
+            <Answer text={message.content} onCite={openPage} />
+            {pending && <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-gray-400 align-middle" />}
+          </>
+        ) : pending ? (
+          <p className="flex items-center gap-2 text-sm text-gray-500">
+            <Spinner className="h-3.5 w-3.5 text-gray-400" /> Searching documents…
+          </p>
+        ) : null}
       </div>
+      {message.sources.length > 0 && <SourceList sources={message.sources} open={open} setOpen={setOpen} />}
     </div>
   );
 }
@@ -55,66 +49,32 @@ function SourceList({
   open: number | null;
   setOpen: (i: number | null) => void;
 }) {
-  const active = open !== null ? sources[open] : null;
   return (
-    <div className="bg-neutral-50 px-4 pt-3 pb-3.5">
-      <div className={`-mx-4 -mt-3 mb-3 ${dashed}`} />
-      <p className={`mb-2 ${micro}`}>
-        Sources <span className="tabular-nums">· {sources.length}</span>
-      </p>
-      <div className="flex flex-wrap gap-1.5">
+    <div className="border-t border-gray-100 px-5 py-3">
+      <p className="mb-1 text-xs font-medium text-gray-400">Sources ({sources.length})</p>
+      <ul className="divide-y divide-gray-100">
         {sources.map((s, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setOpen(open === i ? null : i)}
-            aria-expanded={open === i}
-            className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition ${
-              open === i
-                ? "border-accent bg-accent text-white"
-                : "border-neutral-200 bg-white text-neutral-600 hover:border-accent/40 hover:text-neutral-900"
-            }`}
-          >
-            <DocIcon className="h-3.5 w-3.5 shrink-0 opacity-70" />
-            <span className="max-w-[12rem] truncate">{s.document}</span>
-            <span className="font-semibold tabular-nums">p. {s.page}</span>
-          </button>
+          <li key={i}>
+            <button
+              type="button"
+              onClick={() => setOpen(open === i ? null : i)}
+              aria-expanded={open === i}
+              className="flex w-full items-center gap-3 py-2 text-left text-sm"
+            >
+              <span className="shrink-0 rounded-l-md bg-brand-700 px-1.5 py-1 text-[10px] font-semibold text-white">PDF</span>
+              <span className="min-w-0 flex-1 truncate font-medium text-gray-700">{s.document}</span>
+              <span className="shrink-0 text-gray-500">Page {s.page}</span>
+              <span className="hidden w-14 shrink-0 text-right text-gray-400 tabular-nums sm:inline" title="Similarity to the question">
+                {Math.round(s.score * 100)}%
+              </span>
+              <ChevronDownIcon className={`h-4 w-4 shrink-0 text-gray-400 transition ${open === i ? "rotate-180" : ""}`} />
+            </button>
+            {open === i && (
+              <p className="mb-3 rounded-lg bg-gray-50 px-3.5 py-3 text-[13px] leading-relaxed text-gray-600">{s.text}</p>
+            )}
+          </li>
         ))}
-      </div>
-      {active && (
-        <div className={`rise mt-3 ${panel} p-3.5`}>
-          <dl className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-6">
-            <div className="min-w-0">
-              <dt className={micro}>Document</dt>
-              <dd className="mt-1 truncate text-sm font-medium text-neutral-900">{active.document}</dd>
-            </div>
-            <div>
-              <dt className={micro}>Page</dt>
-              <dd className="mt-1 text-sm font-medium text-neutral-900 tabular-nums">{active.page}</dd>
-            </div>
-            <div>
-              <dt className={micro}>Match</dt>
-              <dd className="mt-1">
-                <Relevance score={active.score} />
-              </dd>
-            </div>
-          </dl>
-          <div className={`my-3 ${dashed}`} />
-          <p className="text-[13px] leading-relaxed text-neutral-600">{active.text}</p>
-        </div>
-      )}
+      </ul>
     </div>
-  );
-}
-
-function Relevance({ score }: { score: number }) {
-  const pct = Math.max(0, Math.min(100, Math.round(score * 100)));
-  return (
-    <span className="flex items-center gap-2 text-sm font-medium text-neutral-900 tabular-nums" title="Cosine similarity to the question">
-      <span className="h-1.5 w-12 overflow-hidden rounded-full bg-neutral-200">
-        <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
-      </span>
-      {pct}%
-    </span>
   );
 }
