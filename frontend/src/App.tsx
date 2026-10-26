@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type ChatMessage, type DocumentInfo, type Health } from "./api";
 import DocumentSidebar from "./components/DocumentSidebar";
 import ChatPanel from "./components/ChatPanel";
+import { AlertIcon, DocIcon, PlusIcon } from "./components/icons";
 
 const SESSION_KEY = "pda-session-id";
 
@@ -133,33 +134,38 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-slate-50 text-slate-900">
-      <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
-        <button
-          className="rounded-md border border-slate-200 px-2 py-1 text-sm whitespace-nowrap md:hidden"
-          onClick={() => setSidebarOpen((o) => !o)}
-          aria-expanded={sidebarOpen}
-        >
-          Documents ({documents.length})
-        </button>
-        <h1 className="truncate text-base font-semibold sm:text-lg">Policy Document Assistant</h1>
+    <div className="flex h-dvh flex-col bg-gradient-to-b from-slate-50 to-indigo-50/40 text-slate-900">
+      <header className="flex items-center gap-3 border-b border-slate-200/80 bg-white/80 px-4 py-3 backdrop-blur sm:px-5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-500/25">
+          <DocIcon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="truncate text-[15px] font-semibold tracking-tight sm:text-base">Policy Document Assistant</h1>
+          <p className="hidden text-xs text-slate-500 sm:block">Grounded answers with page citations</p>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <ProviderBadge health={health} />
           <button
-            onClick={newChat}
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white hover:bg-slate-700"
+            type="button"
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium whitespace-nowrap text-slate-700 md:hidden"
+            onClick={() => setSidebarOpen((o) => !o)}
+            aria-expanded={sidebarOpen}
           >
-            New chat
+            Library ({documents.length})
+          </button>
+          <button
+            type="button"
+            onClick={newChat}
+            className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white shadow-sm transition hover:bg-slate-700"
+          >
+            <PlusIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">New chat</span>
           </button>
         </div>
       </header>
 
-      {health?.index_warning && (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">{health.index_warning}</div>
-      )}
-      {health?.error && (
-        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{health.error}</div>
-      )}
+      {health?.index_warning && <Banner tone="amber">{health.index_warning}</Banner>}
+      {health?.error && <Banner tone="red">{health.error}</Banner>}
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <DocumentSidebar
@@ -184,21 +190,39 @@ export default function App() {
   );
 }
 
+function Banner({ tone, children }: { tone: "amber" | "red"; children: React.ReactNode }) {
+  const styles = tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-red-200 bg-red-50 text-red-800";
+  return (
+    <div role="alert" className={`flex items-start gap-2 border-b px-4 py-2.5 text-sm sm:px-5 ${styles}`}>
+      <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
 function ProviderBadge({ health }: { health: Health | null }) {
   if (!health) {
-    return <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800">API offline</span>;
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-red-100">
+        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+        API offline
+      </span>
+    );
   }
   const ok = health.status === "ok";
   return (
     <span
       title={ok ? `Chat: ${health.chat_model}\nEmbeddings: ${health.embedding_model}` : (health.error ?? "")}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-        ok ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
+        ok ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-amber-50 text-amber-800 ring-amber-100"
       }`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-emerald-500" : "bg-amber-500"}`} />
-      {health.provider}
-      <span className="hidden font-normal sm:inline">· {health.chat_model ?? "not configured"}</span>
+      <span className="relative flex h-2 w-2">
+        {ok && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />}
+        <span className={`relative inline-flex h-2 w-2 rounded-full ${ok ? "bg-emerald-500" : "bg-amber-500"}`} />
+      </span>
+      <span className="capitalize">{health.provider}</span>
+      <span className="hidden font-normal text-current/70 lg:inline">· {health.chat_model ?? "not configured"}</span>
     </span>
   );
 }
