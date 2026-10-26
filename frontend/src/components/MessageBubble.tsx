@@ -22,7 +22,7 @@ export default function MessageBubble({ message, pending }: { message: ChatMessa
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white">
+    <div className="rounded-xl border border-gray-200 bg-surface">
       <div className="px-5 py-4 text-[15px] leading-relaxed text-gray-600">
         {message.content ? (
           <>

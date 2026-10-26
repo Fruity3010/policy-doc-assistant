@@ -97,7 +97,7 @@ export default function DocumentSidebar({ className, health, documents, loading,
                 <button
                   type="button"
                   onClick={browse}
-                  className="w-full rounded-lg bg-white px-4 py-2 text-sm font-semibold text-chrome transition hover:bg-brand-50"
+                  className="w-full rounded-lg bg-white px-4 py-2 text-sm font-semibold text-chrome transition hover:bg-white/90"
                 >
                   Browse files
                 </button>

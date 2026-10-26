@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type ChatMessage, type DocumentInfo, type Health } from "./api";
 import DocumentSidebar from "./components/DocumentSidebar";
 import ChatPanel from "./components/ChatPanel";
-import { AlertIcon, DocIcon, MenuIcon, PlusIcon } from "./components/icons";
+import { AlertIcon, DocIcon, MenuIcon, MoonIcon, PlusIcon, SunIcon } from "./components/icons";
 
 const SESSION_KEY = "pda-session-id";
 
@@ -44,6 +44,18 @@ export default function App() {
   const [chatError, setChatError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  function toggleTheme() {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    try {
+      localStorage.setItem("pda-theme", next ? "dark" : "light");
+    } catch {
+      /* storage unavailable */
+    }
+  }
 
   const refreshHealth = useCallback(() => {
     api.health().then(setHealth).catch(() => setHealth(null));
@@ -157,9 +169,18 @@ export default function App() {
           <span className="font-medium text-white">Document Q&amp;A</span>
         </nav>
 
-        <div className="ml-auto flex items-center gap-4">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <ProviderStatus health={health} />
           <span className="hidden h-6 w-px bg-white/15 sm:block" />
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            title={dark ? "Light mode" : "Dark mode"}
+            className="grid h-9 w-9 place-items-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+          >
+            {dark ? <SunIcon className="h-[1.125rem] w-[1.125rem]" /> : <MoonIcon className="h-[1.125rem] w-[1.125rem]" />}
+          </button>
           <button
             type="button"
             onClick={newChat}

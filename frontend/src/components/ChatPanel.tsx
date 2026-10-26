@@ -48,7 +48,7 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
       <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
         <div className="mx-auto flex max-w-3xl flex-col gap-4">
           {messages.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-6 sm:p-8">
+            <div className="rounded-xl border border-gray-200 bg-surface p-6 sm:p-8">
               <h1 className="text-lg font-semibold text-gray-700">Ask a question</h1>
               <p className="mt-1 text-sm text-gray-500">
                 {hasDocuments
@@ -65,7 +65,7 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
                         type="button"
                         onClick={() => onAsk(q)}
                         disabled={streaming}
-                        className="rounded-lg border border-gray-200 px-4 py-2.5 text-left text-sm text-gray-600 transition hover:border-brand-100 hover:bg-brand-25 hover:text-brand-700 disabled:opacity-50"
+                        className="rounded-lg border border-gray-200 px-4 py-2.5 text-left text-sm text-gray-600 transition hover:border-brand-100 hover:bg-brand-25 hover:text-brand-900 disabled:opacity-50"
                       >
                         {q}
                       </button>
@@ -81,7 +81,7 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
         </div>
       </div>
 
-      <div className="border-t border-gray-200 bg-white px-4 py-4 sm:px-8">
+      <div className="border-t border-gray-200 bg-surface px-4 py-4 sm:px-8">
         <div className="mx-auto max-w-3xl">
           {error && (
             <div role="alert" className="mb-3 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-700">
@@ -107,7 +107,7 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
               maxLength={2000}
               placeholder={hasDocuments ? "Ask about your documents" : "Upload a document first"}
               aria-label="Question"
-              className="max-h-40 min-h-11 flex-1 resize-none rounded-lg border-[1.5px] border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-brand-600 focus:shadow-[0_0_0_3px_rgba(18,183,106,0.18)]"
+              className="max-h-40 min-h-11 flex-1 resize-none rounded-lg border-[1.5px] border-gray-200 bg-surface px-3.5 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-brand-600 focus:shadow-[0_0_0_3px_rgba(18,183,106,0.18)]"
             />
             <button
               type="submit"

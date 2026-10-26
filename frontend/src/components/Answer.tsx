@@ -35,7 +35,7 @@ export default function Answer({ text, onCite }: Props) {
             type="button"
             onClick={() => onCite?.(citedPages(part))}
             title={part.slice(1, -1)}
-            className="mx-0.5 inline rounded bg-brand-50 px-1 py-0.5 text-xs font-medium whitespace-nowrap text-brand-700 hover:bg-brand-100"
+            className="mx-0.5 inline rounded bg-brand-50 px-1 py-0.5 text-xs font-medium whitespace-nowrap text-brand-900 hover:bg-brand-100"
           >
             <span className="inline-block max-w-[9rem] truncate align-bottom">{citedDocument(part)}</span>
             {citedPageLabel(part)}
