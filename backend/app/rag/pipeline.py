@@ -6,7 +6,7 @@ from app import config, memory
 from app.llm import LLMProvider, get_provider
 from app.rag import store
 from app.rag.chunking import chunk_pages, extract_pages
-from app.rag.prompts import ANSWER_SYSTEM, NOT_FOUND, REWRITE_SYSTEM, build_answer_prompt, build_rewrite_prompt
+from app.rag.prompts import ANSWER_SYSTEM, REWRITE_SYSTEM, build_answer_prompt, build_rewrite_prompt, has_citation
 
 NO_DOCUMENTS = "No documents have been uploaded yet. Upload a PDF first, then ask your question."
 
@@ -47,7 +47,8 @@ def answer_stream(session_id: str, question: str) -> Iterator[tuple[str, dict]]:
 
     Both messages are saved to memory only once the answer is complete.
     """
-    if not store.list_documents():
+    documents = store.list_documents()
+    if not documents:
         yield "token", {"text": NO_DOCUMENTS}
         memory.add_message(session_id, "user", question)
         memory.add_message(session_id, "assistant", NO_DOCUMENTS, [])
@@ -62,15 +63,16 @@ def answer_stream(session_id: str, question: str) -> Iterator[tuple[str, dict]]:
     yield "question", {"standalone": standalone}
 
     chunks = retrieve(provider, standalone, config.TOP_K)
-    prompt = build_answer_prompt(standalone, chunks, history)
+    prompt = build_answer_prompt(standalone, chunks, history, [d["name"] for d in documents])
 
     answer = ""
     for piece in provider.stream(ANSWER_SYSTEM, prompt):
         answer += piece
         yield "token", {"text": piece}
 
-    # A "not found" answer shouldn't show unrelated chunks as its sources
-    sources = [] if answer.strip().startswith(NOT_FOUND) else chunks
+    # Only show sources for answers that cite something: a "not found" reply
+    # or a reply to "hi" shouldn't present unrelated chunks as evidence
+    sources = chunks if has_citation(answer) else []
     memory.add_message(session_id, "user", question)
     memory.add_message(session_id, "assistant", answer, sources)
     yield "sources", {"sources": sources}

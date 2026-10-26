@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 const CITATION = /(\[[^\]\n]+?,\s*pp?\.\s*\d+(?:\s*[-–,]\s*\d+)*\])/g;
 const BOLD = /(\*\*[^*]+\*\*)/g;
+const ITALIC = /(\*[^*\n]+\*)/g;
 const BULLET = /^\s*[-*•]\s+/;
 const NUMBERED = /^\s*\d+[.)]\s+/;
 const HEADING = /^#{1,4}\s+/;
@@ -37,7 +38,9 @@ export default function Answer({ text, onCite }: Props) {
             {seg.slice(2, -2)}
           </strong>
         ) : (
-          seg
+          seg.split(ITALIC).map((plain, k) =>
+            k % 2 === 1 ? <em key={`${key}-i${i}-${j}-${k}`}>{plain.slice(1, -1)}</em> : plain,
+          )
         ),
       );
     });

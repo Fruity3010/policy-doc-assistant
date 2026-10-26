@@ -3,7 +3,7 @@ import pytest
 from app import memory
 from app.llm.base import RateLimitError, with_retry
 from app.rag import pipeline, store
-from app.rag.prompts import NOT_FOUND, build_answer_prompt, build_rewrite_prompt
+from app.rag.prompts import NOT_FOUND, build_answer_prompt, build_rewrite_prompt, has_citation
 from tests.conftest import SAMPLE_PAGES, FakeProvider, make_pdf
 
 
@@ -31,7 +31,8 @@ def test_delete_removes_chunks(fake):
 
 def test_answer_prompt_labels_sources():
     chunks = [{"document": "a.pdf", "page": 4, "text": "Fact one."}]
-    prompt = build_answer_prompt("What is fact one?", chunks, [])
+    prompt = build_answer_prompt("What is fact one?", chunks, [], ["a.pdf", "b.pdf"])
+    assert prompt.startswith("Uploaded documents: a.pdf, b.pdf")
     assert "--- [a.pdf, p. 4] ---\nFact one." in prompt
     assert prompt.endswith("Answer with citations:")
 
@@ -70,6 +71,21 @@ def test_not_found_answer_has_no_sources(fake):
     fake.answer = NOT_FOUND
     events = list(pipeline.answer_stream("s2", "Who won the 2022 World Cup?"))
     assert events[-1] == ("sources", {"sources": []})
+
+
+def test_small_talk_reply_has_no_sources(fake):
+    pipeline.ingest_pdf("report.pdf", make_pdf(SAMPLE_PAGES))
+    fake.answer = "Hi! I can answer questions about report.pdf."
+    events = list(pipeline.answer_stream("s4", "hi"))
+    assert events[-1] == ("sources", {"sources": []})
+    assert memory.get_messages("s4")[-1]["sources"] == []
+
+
+def test_has_citation():
+    assert has_citation("Rose 40% [report.pdf, p. 2].")
+    assert has_citation("See [a.pdf, pp. 11, 12]")
+    assert not has_citation(NOT_FOUND)
+    assert not has_citation("Hi! I can answer questions about report.pdf [1].")
 
 
 def test_no_documents_short_circuits(fake):

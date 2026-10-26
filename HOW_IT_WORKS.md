@@ -51,9 +51,9 @@ Entry point: `app/main.py` → `chat()`, which streams whatever `app/rag/pipelin
 
    Question: <standalone question>
    ```
-   The system prompt `ANSWER_SYSTEM` says: use only the excerpts, cite every fact as `[Document name, p. X]`, and if the answer isn't there, reply with the exact `NOT_FOUND` sentence. Because each excerpt's header *is* the citation, the model just copies it. (Numbering the excerpts `[1]`, `[2]` made llama3.2 cite `[1]` instead of the page, so the numbers were removed.)
+   The system prompt `ANSWER_SYSTEM` says: use only the excerpts, cite every fact as `[Document name, p. X]`, and if the answer isn't there, reply with the exact `NOT_FOUND` sentence. A separate rule handles greetings and thanks (a friendly one-liner naming the uploaded documents, which are listed at the top of the prompt), while making clear that this never allows answering factual questions from outside knowledge. Because each excerpt's header *is* the citation, the model just copies it. (Numbering the excerpts `[1]`, `[2]` made llama3.2 cite `[1]` instead of the page, so the numbers were removed.)
 6. **Stream the answer.** `provider.stream()` yields text pieces as the model generates them; each becomes an SSE `token` event, and the React app appends it to the message on screen.
-7. **Send the sources.** After the text, a `sources` event carries the retrieved chunks (document, page, snippet, score) so the UI can show expandable citations. If the answer is the "not found" sentence, we send an empty list, so unrelated chunks aren't presented as evidence.
+7. **Send the sources.** After the text, a `sources` event carries the retrieved chunks (document, page, snippet, score) so the UI can show expandable citations. If the answer contains no citation (`prompts.py` → `has_citation()`), we send an empty list. That covers the "not found" reply and small talk: saying "hi" still runs a search, and the chunks it finds are irrelevant, so they must not be shown as evidence.
 8. **Save to memory.** Only now, once the answer is complete, both the user message and the assistant message (with its sources as JSON) are written to SQLite. A failed request therefore doesn't leave half a conversation behind.
 
 ### Why Server-Sent Events?
