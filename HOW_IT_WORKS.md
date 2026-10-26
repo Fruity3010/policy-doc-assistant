@@ -69,7 +69,7 @@ The frontend generates a session id with `crypto.randomUUID()` and keeps it in l
 ## Part 4: Providers (`app/llm/`)
 
 - `base.py` → `LLMProvider` is the interface: `embed_documents`, `embed_query`, `generate`, `stream`. The rest of the app only uses these four methods.
-- `base.py` → `with_retry()` calls a function and, if the error is a rate limit (HTTP 429), waits 2s, 4s, 8s and tries again. After 4 attempts it raises `RateLimitError`, which `main.py` turns into an HTTP 429 (or an SSE `error` event) that the UI shows.
+- `base.py` → `with_retry()` calls a function and, if the error is a rate limit (HTTP 429), waits and tries again. If the provider says how long to wait (Gemini's 429 includes `retryDelay`, e.g. `"18s"`, read by `gemini.py` → `_retry_delay()`), it waits that long; otherwise 2s, 4s, 8s. After the last attempt (6 for Gemini) it raises `RateLimitError`, which `main.py` turns into an HTTP 429 (or an SSE `error` event) that the UI shows.
 - `gemini.py` → `GeminiProvider` uses the `google-genai` SDK. Three details worth knowing:
   - `gemini-embedding-2` merges a plain list of strings into **one** vector. To get one vector per chunk, each text is wrapped in its own `types.Content`.
   - Documents and queries get different prefixes (`title: none | text: …` vs `task: search result | query: …`), as Google recommends for retrieval.
@@ -111,7 +111,7 @@ Each model defines its own vector space (often with a different number of dimens
 The RAG code depends on four methods, not on a vendor SDK. That let me support Gemini and local Ollama with the same pipeline, makes tests possible with a fake provider (no key, no network, deterministic), and means adding OpenAI or Claude is one new class.
 
 **8. How do you handle the free tier's rate limits?**
-Chunks are embedded in batches of 50 per request instead of one request per chunk; the rewrite call is skipped on first messages; 429 errors are retried with exponential backoff (2s, 4s, 8s); and if it still fails the API returns 429 with a clear message, which the UI displays.
+Chunks are embedded in batches of 50 per request; the rewrite call is skipped on first messages; on a 429 we wait for the `retryDelay` Gemini sends back, falling back to exponential backoff. I found in testing that the free tier counts every chunk in a batch as a request (~100 per minute), so batching cuts round trips but not quota, and honouring `retryDelay` is what makes large uploads succeed. If it still fails the API returns 429 with a clear message, which the UI displays.
 
 **9. Why stream with SSE, and how do you handle errors mid-stream?**
 Streaming makes the app feel fast because the first words appear in about a second. SSE is simpler than WebSockets for one-way streaming. Once streaming starts the HTTP status is already 200, so failures are sent as an `error` event that the client turns into an error message. Before streaming starts (e.g. missing key), we return a normal JSON error.

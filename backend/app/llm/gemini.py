@@ -15,10 +15,23 @@ def _is_rate_limit(e: Exception) -> bool:
     return isinstance(e, errors.APIError) and e.code == 429
 
 
+def _retry_delay(e: Exception) -> float | None:
+    """Gemini's 429 says how long to wait, e.g. {"retryDelay": "18s"}."""
+    details = (getattr(e, "details", None) or {}).get("error", {}).get("details", [])
+    for d in details:
+        if "retryDelay" in d:
+            return float(d["retryDelay"].rstrip("s"))
+    return None
+
+
 def _call(fn: Callable):
-    """Run an SDK call with retry, turning SDK errors into our own error types."""
+    """Run an SDK call with retry, turning SDK errors into our own error types.
+
+    The free tier allows ~100 embedded chunks per minute, so a big PDF
+    needs several waits: we allow up to 6 attempts per request.
+    """
     try:
-        return with_retry(fn, _is_rate_limit)
+        return with_retry(fn, _is_rate_limit, attempts=6, retry_after=_retry_delay)
     except errors.APIError as e:
         if e.code in (400, 401, 403) and "key" in str(e).lower():
             raise ConfigError("Gemini rejected the API key. Check GEMINI_API_KEY in backend/.env.") from e

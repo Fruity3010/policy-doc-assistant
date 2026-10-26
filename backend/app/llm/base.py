@@ -53,10 +53,18 @@ class LLMProvider(ABC):
         """Yield the answer piece by piece as the model produces it."""
 
 
-def with_retry(fn: Callable[[], T], is_rate_limit: Callable[[Exception], bool], attempts: int = 4, base_delay: float = 2.0) -> T:
-    """Call fn(); on a rate-limit error wait 2s, 4s, 8s... then try again.
+def with_retry(
+    fn: Callable[[], T],
+    is_rate_limit: Callable[[Exception], bool],
+    attempts: int = 4,
+    base_delay: float = 2.0,
+    retry_after: Callable[[Exception], float | None] = lambda e: None,
+) -> T:
+    """Call fn(); on a rate-limit error wait, then try again.
 
-    Any other error is raised straight away. After the last attempt we raise RateLimitError.
+    The wait is what the provider asked for (`retry_after`), if it said,
+    otherwise 2s, 4s, 8s... Any other error is raised straight away.
+    After the last attempt we raise RateLimitError.
     """
     for attempt in range(attempts):
         try:
@@ -66,7 +74,8 @@ def with_retry(fn: Callable[[], T], is_rate_limit: Callable[[Exception], bool], 
                 raise
             if attempt == attempts - 1:
                 raise RateLimitError("The model provider's rate limit was hit. Wait a minute and try again.") from e
-            time.sleep(base_delay * 2**attempt)
+            delay = retry_after(e) or base_delay * 2**attempt
+            time.sleep(min(delay + 1, 65))  # +1s margin, never more than ~1 minute
     raise AssertionError("unreachable")
 
 

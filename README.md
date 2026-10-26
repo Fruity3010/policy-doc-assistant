@@ -125,7 +125,7 @@ If something fails after streaming has started, the server sends `event: error` 
 | 400 | Bad file type, unreadable or empty PDF |
 | 409 | Embedding model changed since documents were indexed |
 | 422 | Invalid request body |
-| 429 | Provider rate limit still hit after 4 retries with backoff (2s, 4s, 8s) |
+| 429 | Provider rate limit still hit after retrying (waits as long as the provider asks, up to 6 attempts for Gemini) |
 | 502 | Other provider error |
 | 503 | Provider not configured (missing key, Ollama not running) |
 
@@ -139,7 +139,7 @@ If something fails after streaming has started, the server sends `event: error` 
 - **Question rewriting for memory.** Embedding "What about 2023?" retrieves nothing useful. One small LLM call first rewrites it into a standalone question using the last 6 messages. That call is skipped on the first message of a chat.
 - **Grounded prompt with labelled excerpts.** Each excerpt is headed with its exact citation, `--- [name.pdf, p. X] ---`, so the model only has to copy it (an earlier version numbered the excerpts and small models cited `[1]` instead), and the system prompt requires a citation after every fact and a fixed "not found" sentence otherwise. Temperature is 0.2. Citations let users check every claim, which matters more than fluency for policy documents. When the model gives the "not found" reply, no sources are shown.
 - **Provider abstraction.** `LLMProvider` has four methods (`embed_documents`, `embed_query`, `generate`, `stream`). The RAG code never imports a vendor SDK, so adding OpenAI or Claude means one new class. Tests use the same interface with a fake.
-- **Free-tier friendly.** Embeddings go out in batches of 50 chunks per request. 429s are retried with exponential backoff, and the UI shows a clear rate-limit message if retries run out.
+- **Free-tier friendly.** Embeddings go out in batches of 50 chunks per request. Note that Gemini's free tier counts *each chunk* as a request (about 100 per minute for `gemini-embedding-2`), so batching saves round trips but not quota. On a 429 we wait for the `retryDelay` Gemini returns (e.g. 18s) and try again, up to 6 times; otherwise exponential backoff (2s, 4s, 8s…). If retries run out, the UI shows a clear rate-limit message. In testing, the 36-page INTERPOL report (179 chunks) indexed in about 40 seconds.
 - **No LangChain/LlamaIndex.** Each step is a short, readable function, which makes the pipeline easy to explain and debug.
 
 ## Limitations
@@ -188,6 +188,6 @@ These are public reports; download them yourself (they aren't included in the re
 
 More: [INTERPOL publications](https://www.interpol.int/en/Resources/Documents) and [UNODC Southeast Asia publications](https://www.unodc.org/roseap/en/resources/publications.html).
 
-Tip: for a quick demo, start with a report under ~100 pages. A 300-page report is roughly 1,000 chunks, which can run into the free tier's per-minute limits (the backoff will slow it down rather than fail, up to a point).
+Tip: for a quick demo, start with a report under ~100 pages. A 300-page report is roughly 1,000 chunks, which at ~100 chunks per minute on the free tier takes about 10 minutes to index.
 
 Good demo questions: *"What are the main trends in cyber-enabled fraud?"* → *"What about in West Africa?"* (follow-up), and *"Who won the 2022 World Cup?"* (shows the not-found behaviour).

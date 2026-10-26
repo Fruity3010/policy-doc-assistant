@@ -86,19 +86,21 @@ def test_changed_embedding_model_is_refused(fake):
         store.ensure_compatible(other)
 
 
-def test_retry_backs_off_then_gives_up():
-    calls = []
+def test_retry_backs_off_then_gives_up(monkeypatch):
+    waits = []
+    monkeypatch.setattr("app.llm.base.time.sleep", waits.append)
 
     def always_429():
-        calls.append(1)
         raise RuntimeError("429")
 
     with pytest.raises(RateLimitError):
-        with_retry(always_429, lambda e: "429" in str(e), attempts=3, base_delay=0)
-    assert len(calls) == 3
+        with_retry(always_429, lambda e: "429" in str(e), attempts=4, base_delay=2)
+    assert waits == [3, 5, 9]  # 2s, 4s, 8s backoff + 1s margin
 
 
-def test_retry_recovers_after_rate_limit():
+def test_retry_uses_provider_delay_and_recovers(monkeypatch):
+    waits = []
+    monkeypatch.setattr("app.llm.base.time.sleep", waits.append)
     attempts = iter([RuntimeError("429"), "ok"])
 
     def flaky():
@@ -107,4 +109,5 @@ def test_retry_recovers_after_rate_limit():
             raise result
         return result
 
-    assert with_retry(flaky, lambda e: "429" in str(e), base_delay=0) == "ok"
+    assert with_retry(flaky, lambda e: "429" in str(e), retry_after=lambda e: 18.0) == "ok"
+    assert waits == [19.0]

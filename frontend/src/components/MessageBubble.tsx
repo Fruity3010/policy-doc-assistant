@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ChatMessage, Source } from "../api";
 import { Spinner } from "./DocumentSidebar";
 
-const CITATION = /(\[[^\]\n]+?,\s*p\.\s*\d+(?:\s*[-–]\s*\d+)?\])/g;
+const CITATION = /(\[[^\]\n]+?,\s*pp?\.\s*\d+(?:\s*[-–,]\s*\d+)*\])/g;
 
 function withCitations(text: string) {
   return text.split(CITATION).map((part, i) =>
