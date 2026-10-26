@@ -65,7 +65,7 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
                         type="button"
                         onClick={() => onAsk(q)}
                         disabled={streaming}
-                        className="rounded-lg border border-gray-200 px-4 py-2.5 text-left text-sm text-gray-600 transition hover:border-brand-100 hover:bg-brand-25 hover:text-brand-500 disabled:opacity-50"
+                        className="rounded-lg border border-gray-200 px-4 py-2.5 text-left text-sm text-gray-600 transition hover:border-brand-100 hover:bg-brand-25 hover:text-brand-700 disabled:opacity-50"
                       >
                         {q}
                       </button>
@@ -107,12 +107,12 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
               maxLength={2000}
               placeholder={hasDocuments ? "Ask about your documents" : "Upload a document first"}
               aria-label="Question"
-              className="max-h-40 min-h-11 flex-1 resize-none rounded-lg border-[1.5px] border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-brand-500 focus:shadow-[0_0_0_3px_rgba(36,100,241,0.15)]"
+              className="max-h-40 min-h-11 flex-1 resize-none rounded-lg border-[1.5px] border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-brand-600 focus:shadow-[0_0_0_3px_rgba(18,183,106,0.18)]"
             />
             <button
               type="submit"
               disabled={streaming || !input.trim()}
-              className="flex h-11 shrink-0 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:bg-brand-100 disabled:text-white"
+              className="flex h-11 shrink-0 items-center gap-2 rounded-lg bg-brand-700 px-4 text-sm font-semibold text-white transition hover:bg-brand-800 disabled:bg-gray-100 disabled:text-gray-400"
             >
               <SendIcon className="h-4 w-4" />
               <span className="hidden sm:inline">{streaming ? "Answering" : "Send"}</span>

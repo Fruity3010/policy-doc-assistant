@@ -135,13 +135,13 @@ export default function App() {
 
   return (
     <div className="flex h-dvh flex-col bg-gray-50">
-      <header className="flex h-14 shrink-0 items-center gap-3 bg-navy px-4 text-white sm:px-6">
+      <header className="flex h-14 shrink-0 items-center gap-3 bg-chrome px-4 text-white sm:px-6">
         <button
           type="button"
           onClick={() => setSidebarOpen((o) => !o)}
           aria-expanded={sidebarOpen}
           aria-label="Toggle documents"
-          className="grid h-9 w-9 place-items-center rounded-lg text-gray-300 hover:bg-navy-light md:hidden"
+          className="grid h-9 w-9 place-items-center rounded-lg text-white/70 hover:bg-white/10 md:hidden"
         >
           <MenuIcon className="h-5 w-5" />
         </button>
@@ -152,18 +152,18 @@ export default function App() {
           <span className="text-base font-bold">Policy Docs</span>
         </div>
         <nav aria-label="Breadcrumb" className="ml-6 hidden items-center gap-2 text-sm lg:flex">
-          <span className="text-gray-400">Workspace</span>
-          <span className="text-gray-500">/</span>
+          <span className="text-white/50">Workspace</span>
+          <span className="text-white/30">/</span>
           <span className="font-medium text-white">Document Q&amp;A</span>
         </nav>
 
         <div className="ml-auto flex items-center gap-4">
           <ProviderStatus health={health} />
-          <span className="hidden h-8 w-px bg-white/15 sm:block" />
+          <span className="hidden h-6 w-px bg-white/15 sm:block" />
           <button
             type="button"
             onClick={newChat}
-            className="flex items-center gap-1.5 rounded-lg bg-navy-light px-3 py-2 text-sm font-medium text-white transition hover:bg-white/15"
+            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-white ring-1 ring-white/10 transition hover:bg-white/15"
           >
             <PlusIcon className="h-4 w-4" />
             <span className="hidden sm:inline">New chat</span>
@@ -177,6 +177,7 @@ export default function App() {
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <DocumentSidebar
           className={sidebarOpen ? "flex" : "hidden md:flex"}
+          health={health}
           documents={documents}
           loading={docsLoading}
           uploading={uploading}
@@ -209,7 +210,7 @@ function Banner({ tone, children }: { tone: "amber" | "red"; children: React.Rea
 
 function ProviderStatus({ health }: { health: Health | null }) {
   const ok = health?.status === "ok";
-  const dot = !health ? "bg-red-500" : ok ? "bg-success" : "bg-amber-400";
+  const dot = !health ? "bg-red-500" : ok ? "bg-brand-500" : "bg-amber-400";
   const label = !health ? "API offline" : ok ? health.provider : `${health.provider} not configured`;
   return (
     <div
@@ -218,7 +219,7 @@ function ProviderStatus({ health }: { health: Health | null }) {
     >
       <span className={`h-2 w-2 rounded-full ring-2 ring-white/20 ${dot}`} />
       <span className="font-medium capitalize">{label}</span>
-      {ok && <span className="hidden text-gray-400 md:inline">{health?.chat_model}</span>}
+      {ok && <span className="hidden text-white/50 md:inline">{health?.chat_model}</span>}
     </div>
   );
 }
