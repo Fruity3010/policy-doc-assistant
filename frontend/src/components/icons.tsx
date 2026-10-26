@@ -8,7 +8,7 @@ function Icon({ children, ...props }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.8}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -86,10 +86,28 @@ export function TypingDots() {
       {[0, 150, 300].map((delay) => (
         <span
           key={delay}
-          className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-400"
+          className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent"
           style={{ animationDelay: `${delay}ms` }}
         />
       ))}
     </span>
   );
 }
+
+export const SidebarArt = () => (
+  <svg
+    aria-hidden="true"
+    className="pointer-events-none absolute inset-0 h-full w-full"
+    viewBox="0 0 240 800"
+    preserveAspectRatio="xMidYMid slice"
+    fill="none"
+  >
+    <circle cx="230" cy="70" r="110" fill="white" fillOpacity="0.05" />
+    <circle cx="200" cy="90" r="46" stroke="white" strokeOpacity="0.12" strokeWidth="1.5" />
+    <circle cx="-20" cy="430" r="120" stroke="white" strokeOpacity="0.08" strokeWidth="1.5" />
+    <circle cx="-20" cy="430" r="80" stroke="white" strokeOpacity="0.06" strokeWidth="1.5" />
+    <circle cx="60" cy="470" r="14" fill="white" fillOpacity="0.08" />
+    <circle cx="210" cy="760" r="150" fill="white" fillOpacity="0.04" />
+    <circle cx="150" cy="650" r="28" stroke="white" strokeOpacity="0.14" strokeWidth="1.5" />
+  </svg>
+);

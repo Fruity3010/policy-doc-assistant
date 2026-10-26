@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import type { ChatMessage } from "../api";
 import MessageBubble from "./MessageBubble";
-import { AlertIcon, CloseIcon, SendIcon, SparkIcon } from "./icons";
+import { AlertIcon, CloseIcon, SendIcon } from "./icons";
+import { dashed, micro, panel } from "./tokens";
 
 const EXAMPLES = [
-  { title: "Main trends", question: "What are the main cybercrime trends described?" },
+  { title: "Trends", question: "What are the main cybercrime trends described?" },
   { title: "Recommendations", question: "Summarise the key recommendations." },
-  { title: "Regional impact", question: "Which regions are most affected?" },
+  { title: "Regions", question: "Which regions are most affected?" },
 ];
 
 type Props = {
@@ -45,31 +46,35 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
         <div className="mx-auto flex max-w-3xl flex-col gap-6">
           {messages.length === 0 ? (
-            <div className="mx-auto mt-6 flex max-w-xl flex-col items-center text-center sm:mt-14">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
-                <SparkIcon className="h-7 w-7" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Ask about your documents</h2>
-              <p className="mt-2 text-[15px] text-slate-500">
+            <div className="mx-auto mt-4 w-full max-w-2xl sm:mt-12">
+              <p className={`blur-in ${micro}`}>Grounded answers · page citations</p>
+              <h1 className="blur-in mt-3 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl" style={{ "--d": "0.08s" } as CSSProperties}>
+                Ask your <span className="text-accent">documents</span>.
+              </h1>
+              <p className="blur-in mt-3 max-w-lg text-[15px] text-neutral-500" style={{ "--d": "0.16s" } as CSSProperties}>
                 {hasDocuments
-                  ? "Answers come only from your uploaded PDFs, with a page citation for every fact."
-                  : "Upload a PDF report in the library to get started."}
+                  ? "Every answer comes only from your uploaded PDFs and cites the page it came from. If it isn't in the documents, it says so."
+                  : "Upload a PDF report in the library to get started. Answers will come only from your documents, with page citations."}
               </p>
               {hasDocuments && (
-                <div className="mt-8 grid w-full gap-3 sm:grid-cols-3">
-                  {EXAMPLES.map((ex) => (
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                  {EXAMPLES.map((ex, i) => (
                     <button
                       key={ex.title}
                       type="button"
                       onClick={() => onAsk(ex.question)}
                       disabled={streaming}
-                      className="rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md disabled:opacity-50"
+                      style={{ "--d": `${0.24 + i * 0.08}s` } as CSSProperties}
+                      className={`blur-in group ${panel} p-4 text-left transition hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-md hover:shadow-neutral-200 disabled:opacity-50`}
                     >
-                      <p className="text-xs font-semibold text-indigo-600">{ex.title}</p>
-                      <p className="mt-1 text-sm text-slate-600">{ex.question}</p>
+                      <p className={micro}>
+                        <span className="tabular-nums">0{i + 1}</span> · {ex.title}
+                      </p>
+                      <p className={`my-3 ${dashed}`} />
+                      <p className="text-sm text-neutral-700 group-hover:text-neutral-900">{ex.question}</p>
                     </button>
                   ))}
                 </div>
@@ -82,12 +87,12 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
         </div>
       </div>
 
-      <div className="px-4 pb-4 sm:px-6">
+      <div className="px-4 pb-4 sm:px-8">
         <div className="mx-auto max-w-3xl">
           {error && (
             <div
               role="alert"
-              className="mb-3 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
+              className="rise mb-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-800"
             >
               <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
               <p className="flex-1">{error}</p>
@@ -98,7 +103,7 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
           )}
           <form
             onSubmit={submit}
-            className="flex items-end gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-200/50 transition focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-100"
+            className="flex items-end gap-2 rounded-xl border border-neutral-200 bg-white p-2 shadow-sm transition focus-within:border-accent/50 focus-within:ring-4 focus-within:ring-accent/10"
           >
             <textarea
               ref={textareaRef}
@@ -114,19 +119,19 @@ export default function ChatPanel({ messages, streaming, error, hasDocuments, on
               maxLength={2000}
               placeholder={hasDocuments ? "Ask about your documents…" : "Upload a document first…"}
               aria-label="Question"
-              className="max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-[15px] text-slate-800 outline-none placeholder:text-slate-400"
+              className="max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-[15px] text-neutral-900 outline-none placeholder:text-neutral-400"
             />
             <button
               type="submit"
               disabled={streaming || !input.trim()}
               aria-label="Send"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm transition hover:bg-indigo-500 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-accent text-white transition hover:brightness-110 disabled:bg-neutral-100 disabled:text-neutral-400"
             >
               <SendIcon className="h-5 w-5" />
             </button>
           </form>
-          <p className="mt-2 hidden text-center text-[11px] text-slate-400 sm:block">
-            Enter to send · Shift + Enter for a new line · Answers are grounded in your documents and may still contain mistakes
+          <p className={`mt-2.5 hidden text-center sm:block ${micro}`}>
+            Enter to send · Shift + Enter for new line · Check citations before relying on an answer
           </p>
         </div>
       </div>

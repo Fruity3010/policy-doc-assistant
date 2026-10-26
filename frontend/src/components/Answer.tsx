@@ -25,7 +25,7 @@ export default function Answer({ text, onCite }: Props) {
             key={`${key}-c${i}`}
             type="button"
             onClick={() => onCite?.(citedPages(part))}
-            className="mx-0.5 inline-flex translate-y-[-1px] items-center rounded-md bg-indigo-50 px-1.5 py-0.5 align-middle text-[11px] font-medium whitespace-nowrap text-indigo-700 ring-1 ring-indigo-100 transition hover:bg-indigo-100"
+            className="mx-0.5 inline-flex translate-y-[-1px] items-center rounded bg-accent/10 px-1.5 py-0.5 align-middle text-[11px] font-medium whitespace-nowrap text-accent tabular-nums transition hover:bg-accent/20"
           >
             {part.slice(1, -1)}
           </button>
@@ -33,7 +33,7 @@ export default function Answer({ text, onCite }: Props) {
       }
       return part.split(BOLD).map((seg, j) =>
         j % 2 === 1 ? (
-          <strong key={`${key}-b${i}-${j}`} className="font-semibold text-slate-900">
+          <strong key={`${key}-b${i}-${j}`} className="font-semibold text-neutral-900">
             {seg.slice(2, -2)}
           </strong>
         ) : (
@@ -59,11 +59,11 @@ export default function Answer({ text, onCite }: Props) {
       const items = list.items.map((item, i) => <li key={i}>{inline(item, `${k}-${i}`)}</li>);
       blocks.push(
         list.ordered ? (
-          <ol key={k} className="list-decimal space-y-1.5 pl-5 marker:text-slate-400">
+          <ol key={k} className="list-decimal space-y-1.5 pl-5 marker:text-neutral-400">
             {items}
           </ol>
         ) : (
-          <ul key={k} className="list-disc space-y-1.5 pl-5 marker:text-indigo-300">
+          <ul key={k} className="list-disc space-y-1.5 pl-5 marker:text-accent">
             {items}
           </ul>
         ),
@@ -86,7 +86,7 @@ export default function Answer({ text, onCite }: Props) {
       flushList();
       const k = `h${blocks.length}`;
       blocks.push(
-        <p key={k} className="font-semibold text-slate-900">
+        <p key={k} className="font-semibold text-neutral-900">
           {inline(line.replace(HEADING, ""), k)}
         </p>,
       );

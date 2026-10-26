@@ -1,9 +1,50 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+:root {
+  --paper: #ffffff;
+  --ink: #0c2236;
+  --accent: #0f766e;
+  --canvas: #f2f6f8;
+
+  --color-white: var(--paper);
+  --color-neutral-50: color-mix(in oklab, var(--ink) 3%, var(--paper));
+  --color-neutral-100: color-mix(in oklab, var(--ink) 6%, var(--paper));
+  --color-neutral-200: color-mix(in oklab, var(--ink) 12%, var(--paper));
+  --color-neutral-300: color-mix(in oklab, var(--ink) 22%, var(--paper));
+  --color-neutral-400: color-mix(in oklab, var(--ink) 40%, var(--paper));
+  --color-neutral-500: color-mix(in oklab, var(--ink) 58%, var(--paper));
+  --color-neutral-600: color-mix(in oklab, var(--ink) 70%, var(--paper));
+  --color-neutral-700: color-mix(in oklab, var(--ink) 82%, var(--paper));
+  --color-neutral-800: color-mix(in oklab, var(--ink) 92%, var(--paper));
+  --color-neutral-900: var(--ink);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-accent: var(--accent);
+  --color-canvas: var(--canvas);
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 body {
+  background: var(--canvas);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(0.5rem); }
+}
+@keyframes blur-in {
+  from { opacity: 0; filter: blur(8px); transform: translateY(1rem); }
+}
+.rise { animation: rise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.blur-in { animation: blur-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0s) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .blur-in { animation: none; }
+}
+
+@media (width < 40rem) {
+  input, select, textarea { font-size: 16px; }
 }

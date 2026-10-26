@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type ChatMessage, type DocumentInfo, type Health } from "./api";
-import DocumentSidebar from "./components/DocumentSidebar";
+import DocumentSidebar, { Brand } from "./components/DocumentSidebar";
 import ChatPanel from "./components/ChatPanel";
-import { AlertIcon, DocIcon, PlusIcon } from "./components/icons";
+import { AlertIcon, PlusIcon } from "./components/icons";
+import { micro } from "./components/tokens";
 
 const SESSION_KEY = "pda-session-id";
 
@@ -134,49 +135,65 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-gradient-to-b from-slate-50 to-indigo-50/40 text-slate-900">
-      <header className="flex items-center gap-3 border-b border-slate-200/80 bg-white/80 px-4 py-3 backdrop-blur sm:px-5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-500/25">
-          <DocIcon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-semibold tracking-tight sm:text-base">Policy Document Assistant</h1>
-          <p className="hidden text-xs text-slate-500 sm:block">Grounded answers with page citations</p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <ProviderBadge health={health} />
+    <div className="flex h-dvh flex-col bg-canvas text-neutral-900 md:flex-row">
+      <header className="flex h-14 shrink-0 items-center gap-2 bg-ink px-4 md:hidden">
+        <Brand />
+        <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium whitespace-nowrap text-slate-700 md:hidden"
             onClick={() => setSidebarOpen((o) => !o)}
             aria-expanded={sidebarOpen}
+            className="rounded-lg px-2.5 py-1.5 text-sm font-medium whitespace-nowrap text-white/80 ring-1 ring-white/20 transition hover:bg-white/10"
           >
-            Library ({documents.length})
+            Library <span className="tabular-nums">{documents.length}</span>
           </button>
           <button
             type="button"
             onClick={newChat}
-            className="flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white shadow-sm transition hover:bg-slate-700"
+            aria-label="New chat"
+            className="grid h-8 w-8 place-items-center rounded-lg bg-white text-ink"
           >
             <PlusIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">New chat</span>
           </button>
         </div>
       </header>
 
-      {health?.index_warning && <Banner tone="amber">{health.index_warning}</Banner>}
-      {health?.error && <Banner tone="red">{health.error}</Banner>}
+      <DocumentSidebar
+        className={sidebarOpen ? "flex" : "hidden md:flex"}
+        health={health}
+        documents={documents}
+        loading={docsLoading}
+        uploading={uploading}
+        error={docError}
+        onUpload={uploadFiles}
+        onDelete={deleteDocument}
+      />
 
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <DocumentSidebar
-          className={sidebarOpen ? "flex" : "hidden md:flex"}
-          documents={documents}
-          loading={docsLoading}
-          uploading={uploading}
-          error={docError}
-          onUpload={uploadFiles}
-          onDelete={deleteDocument}
-        />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="hidden h-16 shrink-0 items-center gap-3 border-b border-neutral-200 bg-white/95 px-6 backdrop-blur md:flex">
+          <div className="min-w-0">
+            <p className={micro}>Workspace</p>
+            <p className="truncate text-[0.9375rem] font-semibold tracking-tight">Document Q&amp;A</p>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <StatusChip health={health} />
+            <button
+              type="button"
+              onClick={newChat}
+              className="flex items-center gap-2 rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50"
+            >
+              <PlusIcon className="h-4 w-4" />
+              New chat
+            </button>
+          </div>
+        </div>
+
+        {health?.index_warning && <Banner tone="amber">{health.index_warning}</Banner>}
+        {health?.error && <Banner tone="red">{health.error}</Banner>}
+        <div className="flex px-4 pt-3 md:hidden">
+          <StatusChip health={health} />
+        </div>
+
         <ChatPanel
           messages={messages}
           streaming={streaming}
@@ -193,36 +210,29 @@ export default function App() {
 function Banner({ tone, children }: { tone: "amber" | "red"; children: React.ReactNode }) {
   const styles = tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-red-200 bg-red-50 text-red-800";
   return (
-    <div role="alert" className={`flex items-start gap-2 border-b px-4 py-2.5 text-sm sm:px-5 ${styles}`}>
+    <div role="alert" className={`flex items-start gap-2 border-b px-4 py-2.5 text-sm md:px-6 ${styles}`}>
       <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{children}</span>
     </div>
   );
 }
 
-function ProviderBadge({ health }: { health: Health | null }) {
-  if (!health) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-red-100">
-        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-        API offline
-      </span>
-    );
-  }
-  const ok = health.status === "ok";
+function StatusChip({ health }: { health: Health | null }) {
+  const state = !health
+    ? { text: "API offline", chip: "border-red-300 bg-red-50 text-red-900", dot: "bg-red-500" }
+    : health.status === "ok"
+      ? { text: `${health.provider} · online`, chip: "border-emerald-300 bg-emerald-50 text-emerald-900", dot: "bg-emerald-500" }
+      : { text: `${health.provider} · not configured`, chip: "border-amber-300 bg-amber-50 text-amber-900", dot: "bg-amber-500" };
   return (
     <span
-      title={ok ? `Chat: ${health.chat_model}\nEmbeddings: ${health.embedding_model}` : (health.error ?? "")}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${
-        ok ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-amber-50 text-amber-800 ring-amber-100"
-      }`}
+      title={health?.status === "ok" ? `Chat: ${health.chat_model}\nEmbeddings: ${health.embedding_model}` : (health?.error ?? "")}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded border px-2 py-1 text-[0.6875rem] font-semibold tracking-wider uppercase ${state.chip}`}
     >
-      <span className="relative flex h-2 w-2">
-        {ok && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />}
-        <span className={`relative inline-flex h-2 w-2 rounded-full ${ok ? "bg-emerald-500" : "bg-amber-500"}`} />
+      <span className="relative flex h-1.5 w-1.5">
+        {health?.status === "ok" && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />}
+        <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${state.dot}`} />
       </span>
-      <span className="capitalize">{health.provider}</span>
-      <span className="hidden font-normal text-current/70 lg:inline">· {health.chat_model ?? "not configured"}</span>
+      {state.text}
     </span>
   );
 }
