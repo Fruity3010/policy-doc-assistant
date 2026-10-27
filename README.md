@@ -1,6 +1,6 @@
 # Policy Document Assistant
 
-Upload policy and research PDFs (for example UN or INTERPOL crime and cybercrime reports) and ask questions in a chat. The assistant answers **only from the uploaded documents**, cites every fact as `[Document name, p. X]`, and says so when the answer isn't in the documents instead of making something up. It remembers the conversation, so follow-ups like *"What about 2023?"* work. The backend is a hand-built RAG pipeline in Python/FastAPI: pypdf for parsing, Gemini or Ollama for embeddings and chat, ChromaDB for vectors, SQLite for memory. Answers stream token by token to a React/TypeScript frontend.
+Upload policy and research PDFs (for example security frameworks, government guidance or research reports) and ask questions in a chat. The assistant answers **only from the uploaded documents**, cites every fact as `[Document name, p. X]`, and says so when the answer isn't in the documents instead of making something up. It remembers the conversation, so follow-ups like *"What about 2023?"* work. The backend is a hand-built RAG pipeline in Python/FastAPI: pypdf for parsing, Gemini or Ollama for embeddings and chat, ChromaDB for vectors, SQLite for memory. Answers stream token by token to a React/TypeScript frontend.
 
 ## Architecture
 
@@ -139,7 +139,7 @@ If something fails after streaming has started, the server sends `event: error` 
 - **Question rewriting for memory.** Embedding "What about 2023?" retrieves nothing useful. One small LLM call first rewrites it into a standalone question using the last 6 messages. That call is skipped on the first message of a chat.
 - **Grounded prompt with labelled excerpts.** Each excerpt is headed with its exact citation, `--- [name.pdf, p. X] ---`, so the model only has to copy it (an earlier version numbered the excerpts and small models cited `[1]` instead), and the system prompt requires a citation after every fact and a fixed "not found" sentence otherwise. Temperature is 0.2. Citations let users check every claim, which matters more than fluency for policy documents. Sources are attached only when the answer actually contains a citation, so a "not found" reply or a reply to "hi" never presents unrelated chunks as evidence. Greetings and thanks get a short friendly reply naming the uploaded documents, but factual questions are never answered from outside knowledge (e.g. "what is the capital of France?" is refused).
 - **Provider abstraction.** `LLMProvider` has four methods (`embed_documents`, `embed_query`, `generate`, `stream`). The RAG code never imports a vendor SDK, so adding OpenAI or Claude means one new class. Tests use the same interface with a fake.
-- **Free-tier friendly.** Embeddings go out in batches of 50 chunks per request. Note that Gemini's free tier counts *each chunk* as a request (about 100 per minute for `gemini-embedding-2`), so batching saves round trips but not quota. On a 429 we wait for the `retryDelay` Gemini returns (e.g. 18s) and try again, up to 6 times; otherwise exponential backoff (2s, 4s, 8s…). If retries run out, the UI shows a clear rate-limit message. In testing, the 36-page INTERPOL report (179 chunks) indexed in about 40 seconds.
+- **Free-tier friendly.** Embeddings go out in batches of 50 chunks per request. Note that Gemini's free tier counts *each chunk* as a request (about 100 per minute for `gemini-embedding-2`), so batching saves round trips but not quota. On a 429 we wait for the `retryDelay` Gemini returns (e.g. 18s) and try again, up to 6 times; otherwise exponential backoff (2s, 4s, 8s…). If retries run out, the UI shows a clear rate-limit message. In testing, a 36-page report (179 chunks) indexed in about 40 seconds.
 - **No LangChain/LlamaIndex.** Each step is a short, readable function, which makes the pipeline easy to explain and debug.
 
 ## Limitations
@@ -156,7 +156,7 @@ If something fails after streaming has started, the server sends `event: error` 
 - **pgvector** (Postgres) to keep vectors, documents and chat history in one managed database, which makes hosting easier.
 - **Hybrid search**: BM25 keyword scores combined with vector scores (reciprocal rank fusion), then a reranker on the top 20.
 - **Evaluation**: a small set of question/answer/page triples, measuring retrieval hit-rate@k and answer faithfulness (e.g. with Ragas), run in CI.
-- **Multilingual support**: Gemini embeddings are multilingual, so this mostly means prompt changes and tests with French/Spanish UN reports.
+- **Multilingual support**: Gemini embeddings are multilingual, so this mostly means prompt changes and tests with French/Spanish documents.
 - Background ingestion with progress, OCR for scanned PDFs, table-aware parsing, auth and per-user document spaces, citation links that open the PDF at the cited page.
 
 ## Deployment
@@ -180,14 +180,12 @@ Ollama isn't practical on these hosts, so deploy with Gemini.
 
 ## Demo documents
 
-These are public reports; download them yourself (they aren't included in the repo):
+These are public documents; download them yourself (they aren't included in the repo):
 
-1. **INTERPOL, Africa Cyberthreat Assessment Report 2025** (~1.4 MB): https://www.interpol.int/content/download/23094/file/INTERPOL_Africa_Cyberthreat_Assessment_Report_2025.pdf
-2. **UNODC, Emerging threats: AI and automation in the cybercrime landscape of Southeast Asia** (2025): https://www.unodc.org/roseap/uploads/documents/Publications/2025/UNODC_Report_Emerging_threats_-_The_intersection_of_criminal_and_technological_innovation_in_the_use_of_automation_and_AI.pdf
-3. **UNODC, The Nexus Between Cybercrime and Corruption** (2025): https://www.unodc.org/roseap/uploads/documents/Publications/2025/2025.10.21_The_Nexus_Between_Cybercrime_and_Corruption.pdf
-
-More: [INTERPOL publications](https://www.interpol.int/en/Resources/Documents) and [UNODC Southeast Asia publications](https://www.unodc.org/roseap/en/resources/publications.html).
+1. **NIST, Cybersecurity Framework (CSF) 2.0** (32 pages): https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf
+2. **NIST, AI Risk Management Framework (AI RMF 1.0)** (48 pages): https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf
+3. **NIST, Privacy Framework 1.0** (43 pages): https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.01162020.pdf
 
 Tip: for a quick demo, start with a report under ~100 pages. A 300-page report is roughly 1,000 chunks, which at ~100 chunks per minute on the free tier takes about 10 minutes to index.
 
-Good demo questions: *"What are the main trends in cyber-enabled fraud?"* → *"What about in West Africa?"* (follow-up), and *"Who won the 2022 World Cup?"* (shows the not-found behaviour).
+Good demo questions: *"What are the core functions of the Cybersecurity Framework?"* → *"What does the Govern function cover?"* (follow-up), *"How does the AI RMF define trustworthy AI?"*, and *"Who won the 2022 World Cup?"* (shows the not-found behaviour).

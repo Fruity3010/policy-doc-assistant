@@ -40,9 +40,9 @@ Entry point: `app/main.py` → `chat()`, which streams whatever `app/rag/pipelin
 5. **Build the grounded prompt.** `prompts.py` → `build_answer_prompt()`:
    ```
    Context excerpts:
-   --- [UNODC_report.pdf, p. 42] ---
+   --- [NIST_CSF_2.0.pdf, p. 42] ---
    <chunk text>
-   --- [UNODC_report.pdf, p. 7] ---
+   --- [NIST_CSF_2.0.pdf, p. 7] ---
    …
 
    Recent conversation (for tone and references only, not a source of facts):
