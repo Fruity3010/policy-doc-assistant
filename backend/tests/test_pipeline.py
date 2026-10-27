@@ -1,6 +1,6 @@
 import pytest
 
-from app import memory
+from app.db import memory
 from app.llm.base import RateLimitError, with_retry
 from app.rag import pipeline, store
 from app.rag.prompts import NOT_FOUND, build_answer_prompt, build_rewrite_prompt, has_citation
@@ -58,7 +58,7 @@ def test_answer_stream_uses_memory_and_saves_messages(fake):
     assert events[0] == ("question", {"standalone": fake.rewrite_to})
     assert "".join(d["text"] for e, d in events if e == "token") == fake.answer
     name, data = events[-1]
-    assert name == "sources" and data["sources"][0]["page"] == 3  # the 2023 page ranks first
+    assert name == "sources" and data["sources"][0]["page"] == 3
     assert "Recent conversation" in fake.last_prompt
 
     history = memory.get_messages("s1")
@@ -111,7 +111,7 @@ def test_retry_backs_off_then_gives_up(monkeypatch):
 
     with pytest.raises(RateLimitError):
         with_retry(always_429, lambda e: "429" in str(e), attempts=4, base_delay=2)
-    assert waits == [3, 5, 9]  # 2s, 4s, 8s backoff + 1s margin
+    assert waits == [3, 5, 9]
 
 
 def test_retry_uses_provider_delay_and_recovers(monkeypatch):

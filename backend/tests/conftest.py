@@ -1,5 +1,3 @@
-"""Shared test setup: a fake LLM provider, a temp data folder, and a tiny PDF builder."""
-
 import math
 import re
 import zlib
@@ -7,14 +5,13 @@ from collections.abc import Iterator
 
 import pytest
 
-from app import config
+from app.core import config
 from app.llm.base import LLMProvider
 
 DIM = 256
 
 
 def _embed(text: str) -> list[float]:
-    """Bag-of-words hashed into a fixed-size vector: texts sharing words end up close."""
     vec = [0.0] * DIM
     for word in re.findall(r"[a-z0-9]+", text.lower()):
         vec[zlib.crc32(word.encode()) % DIM] += 1.0
@@ -49,7 +46,6 @@ class FakeProvider(LLMProvider):
 
 @pytest.fixture(autouse=True)
 def temp_data(tmp_path, monkeypatch):
-    """Every test gets an empty SQLite database and Chroma folder."""
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(config, "CHROMA_DIR", tmp_path / "chroma")
     monkeypatch.setattr(config, "SQLITE_PATH", tmp_path / "app.db")
@@ -59,12 +55,11 @@ def temp_data(tmp_path, monkeypatch):
 def fake(monkeypatch) -> FakeProvider:
     provider = FakeProvider()
     monkeypatch.setattr("app.rag.pipeline.get_provider", lambda: provider)
-    monkeypatch.setattr("app.main.get_provider", lambda: provider)
+    monkeypatch.setattr("app.llm.get_provider", lambda: provider)
     return provider
 
 
 def make_pdf(pages: list[str]) -> bytes:
-    """Build a minimal valid PDF with one line of text per page (no extra dependency needed)."""
     objects = [
         "<< /Type /Catalog /Pages 2 0 R >>",
         f"<< /Type /Pages /Kids [{' '.join(f'{4 + 2 * i} 0 R' for i in range(len(pages)))}] /Count {len(pages)} >>",

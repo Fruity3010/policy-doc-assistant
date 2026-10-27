@@ -1,8 +1,7 @@
-"""The two RAG flows end to end: ingesting a PDF, and answering a question."""
-
 from collections.abc import Iterator
 
-from app import config, memory
+from app.core import config
+from app.db import memory
 from app.llm import LLMProvider, get_provider
 from app.rag import store
 from app.rag.chunking import chunk_pages, extract_pages
@@ -11,11 +10,7 @@ from app.rag.prompts import ANSWER_SYSTEM, REWRITE_SYSTEM, build_answer_prompt, 
 NO_DOCUMENTS = "No documents have been uploaded yet. Upload a PDF first, then ask your question."
 
 
-# ---------- upload flow ----------
-
-
 def ingest_pdf(filename: str, data: bytes) -> dict:
-    """PDF bytes -> pages -> chunks -> embeddings -> stored in Chroma."""
     pages = extract_pages(data)
     chunks = chunk_pages(pages, config.CHUNK_SIZE, config.CHUNK_OVERLAP)
     if not chunks:
@@ -26,27 +21,18 @@ def ingest_pdf(filename: str, data: bytes) -> dict:
     return store.add_document(filename, len(pages), chunks, vectors)
 
 
-# ---------- question flow ----------
-
-
 def rewrite_question(provider: LLMProvider, history: list[dict], question: str) -> str:
-    """Memory step: turn 'What about 2023?' into a full question using the chat history."""
     if not history:
-        return question  # nothing to resolve, save an API call
+        return question
     rewritten = provider.generate(REWRITE_SYSTEM, build_rewrite_prompt(history, question))
     return rewritten.strip().strip('"') or question
 
 
 def retrieve(provider: LLMProvider, question: str, k: int) -> list[dict]:
-    """Embed the question and find the k most similar chunks."""
     return store.search(provider.embed_query(question), k)
 
 
 def answer_stream(session_id: str, question: str) -> Iterator[tuple[str, dict]]:
-    """Yield (event, data) pairs: 'question', many 'token's, then 'sources'.
-
-    Both messages are saved to memory only once the answer is complete.
-    """
     documents = store.list_documents()
     if not documents:
         yield "token", {"text": NO_DOCUMENTS}
@@ -70,8 +56,6 @@ def answer_stream(session_id: str, question: str) -> Iterator[tuple[str, dict]]:
         answer += piece
         yield "token", {"text": piece}
 
-    # Only show sources for answers that cite something: a "not found" reply
-    # or a reply to "hi" shouldn't present unrelated chunks as evidence
     sources = chunks if has_citation(answer) else []
     memory.add_message(session_id, "user", question)
     memory.add_message(session_id, "assistant", answer, sources)

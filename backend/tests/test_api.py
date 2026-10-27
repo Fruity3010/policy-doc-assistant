@@ -63,7 +63,7 @@ def test_missing_api_key_returns_503(monkeypatch):
         raise ConfigError("GEMINI_API_KEY is not set.")
 
     monkeypatch.setattr("app.rag.pipeline.get_provider", no_key)
-    monkeypatch.setattr("app.main.get_provider", no_key)
+    monkeypatch.setattr("app.llm.get_provider", no_key)
     r = upload(make_pdf(SAMPLE_PAGES))
     assert r.status_code == 503 and "GEMINI_API_KEY" in r.json()["detail"]
     assert client.get("/health").json()["status"] == "degraded"

@@ -1,10 +1,8 @@
-"""SQLite connection + schema. Holds documents, chat sessions/messages and index metadata."""
-
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from app import config
+from app.core import config
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS documents (
@@ -35,10 +33,9 @@ CREATE TABLE IF NOT EXISTS meta (
 
 @contextmanager
 def get_db() -> Iterator[sqlite3.Connection]:
-    """Open a connection, commit on success, always close."""
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(config.SQLITE_PATH)
-    conn.row_factory = sqlite3.Row  # rows behave like dicts
+    conn.row_factory = sqlite3.Row
     try:
         conn.executescript(SCHEMA)
         yield conn

@@ -1,14 +1,12 @@
-"""Google Gemini provider, using the official google-genai SDK."""
-
 from collections.abc import Callable, Iterator
 
 from google import genai
 from google.genai import errors, types
 
-from app import config
+from app.core import config
 from app.llm.base import ConfigError, LLMProvider, ProviderError, batched, with_retry
 
-EMBED_BATCH_SIZE = 50  # chunks per embedding request, keeps free-tier request count low
+EMBED_BATCH_SIZE = 50
 
 
 def _is_rate_limit(e: Exception) -> bool:
@@ -16,7 +14,6 @@ def _is_rate_limit(e: Exception) -> bool:
 
 
 def _retry_delay(e: Exception) -> float | None:
-    """Gemini's 429 says how long to wait, e.g. {"retryDelay": "18s"}."""
     details = (getattr(e, "details", None) or {}).get("error", {}).get("details", [])
     for d in details:
         if "retryDelay" in d:
@@ -25,11 +22,6 @@ def _retry_delay(e: Exception) -> float | None:
 
 
 def _call(fn: Callable):
-    """Run an SDK call with retry, turning SDK errors into our own error types.
-
-    The free tier allows ~100 embedded chunks per minute, so a big PDF
-    needs several waits: we allow up to 6 attempts per request.
-    """
     try:
         return with_retry(fn, _is_rate_limit, attempts=6, retry_after=_retry_delay)
     except errors.APIError as e:
@@ -54,8 +46,6 @@ class GeminiProvider(LLMProvider):
         return f"gemini:{self.embed_model}:{self.dim}"
 
     def _embed(self, texts: list[str]) -> list[list[float]]:
-        # Each text is wrapped in its own Content, otherwise gemini-embedding-2
-        # merges the whole list into ONE vector.
         contents = [types.Content(parts=[types.Part.from_text(text=t)]) for t in texts]
         result = _call(
             lambda: self.client.models.embed_content(
@@ -67,7 +57,6 @@ class GeminiProvider(LLMProvider):
         return [e.values for e in result.embeddings]
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        # Prefixes recommended by Google for asymmetric retrieval (document side)
         prefixed = [f"title: none | text: {t}" for t in texts]
         vectors: list[list[float]] = []
         for batch in batched(prefixed, EMBED_BATCH_SIZE):
@@ -85,8 +74,6 @@ class GeminiProvider(LLMProvider):
         return response.text or ""
 
     def stream(self, system: str, prompt: str) -> Iterator[str]:
-        # Rate-limit errors surface when the first chunk is requested,
-        # so we fetch the first chunk inside the retry wrapper.
         def start():
             it = iter(self.client.models.generate_content_stream(model=self.chat_model, contents=prompt, config=self._config(system)))
             return next(it, None), it
