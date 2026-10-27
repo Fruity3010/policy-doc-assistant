@@ -178,6 +178,26 @@ Ollama isn't practical on these hosts, so deploy with Gemini.
 2. Environment variable `VITE_API_URL=https://<your-backend>.onrender.com`.
 3. Deploy, then make sure the Vercel URL is in the backend's `CORS_ORIGINS`.
 
+## Project structure
+
+```
+backend/
+  app/
+    main.py            FastAPI app: CORS, error handler, routers
+    api/               Routes: health, documents, chat (SSE) + session history
+    core/config.py     Settings from backend/.env
+    db/session.py      SQLite connection and schema
+    db/memory.py       Chat messages per session (conversation memory)
+    rag/               chunking, store (ChromaDB), prompts, pipeline (ingest + answer)
+    llm/               Provider interface, Gemini and Ollama
+    schemas.py         Pydantic request and response models
+  tests/               pytest, fake provider
+frontend/src/
+  App.tsx            Layout, session handling
+  components/        Document sidebar, chat panel, messages, answers with sources
+  api.ts             Typed API client and SSE reader
+```
+
 ## Demo documents
 
 These are public documents; download them yourself (they aren't included in the repo):

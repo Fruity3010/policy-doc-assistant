@@ -1,11 +1,9 @@
-"""Ollama provider: runs models locally through Ollama's REST API (no API key needed)."""
-
 import json
 from collections.abc import Iterator
 
 import httpx
 
-from app import config
+from app.core import config
 from app.llm.base import ConfigError, LLMProvider, ProviderError, batched, with_retry
 
 EMBED_BATCH_SIZE = 32
@@ -43,7 +41,6 @@ class OllamaProvider(LLMProvider):
             vectors.extend(self._post("/api/embed", {"model": self.embed_model, "input": batch})["embeddings"])
         return vectors
 
-    # nomic-embed-text expects these task prefixes
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self._embed([f"search_document: {t}" for t in texts])
 
@@ -62,7 +59,6 @@ class OllamaProvider(LLMProvider):
         return self._post("/api/chat", self._chat_body(system, prompt, False))["message"]["content"]
 
     def stream(self, system: str, prompt: str) -> Iterator[str]:
-        # Ollama streams one JSON object per line
         try:
             with self.http.stream("POST", "/api/chat", json=self._chat_body(system, prompt, True)) as r:
                 if r.status_code >= 400:

@@ -11,7 +11,7 @@ An LLM doesn't know what's in your PDFs, and you can't paste a 300-page report i
 
 ## Part 1: Uploading a PDF
 
-Entry point: `app/main.py` → `upload_document()`.
+Entry point: `app/api/documents.py` → `upload_document()`.
 
 1. **Validate the file.** The name must end in `.pdf`, the size must be under `MAX_UPLOAD_MB`, and the bytes must start with `%PDF` (the magic header every PDF has). Anything else is a 400 before we spend any work on it.
 2. **Extract text per page.** `app/rag/chunking.py` → `extract_pages()` uses pypdf to read each page's text layer. Password-protected or corrupt files raise `ValueError`, which becomes a 400.
@@ -31,10 +31,10 @@ Deleting (`store.delete_document()`) removes the SQLite row and then every Chrom
 
 ## Part 2: Answering a question
 
-Entry point: `app/main.py` → `chat()`, which streams whatever `app/rag/pipeline.py` → `answer_stream()` yields.
+Entry point: `app/api/chat.py` → `chat()`, which streams whatever `app/rag/pipeline.py` → `answer_stream()` yields.
 
 1. **No documents?** Reply with a fixed message and skip the LLM entirely.
-2. **Load memory.** `app/memory.py` → `get_messages(session_id, limit=6)` fetches the last 6 messages of this chat from SQLite.
+2. **Load memory.** `app/db/memory.py` → `get_messages(session_id, limit=6)` fetches the last 6 messages of this chat from SQLite.
 3. **Rewrite the question (the memory step).** `rewrite_question()`. A follow-up like *"What about 2023?"* has no meaning by itself, so embedding it would retrieve random chunks. We send the history plus the follow-up to the LLM with `REWRITE_SYSTEM` (in `app/rag/prompts.py`) and get back a standalone question, e.g. *"What were the main cybercrime trends in 2023?"*. On the first message there's no history, so we skip this call. The rewritten question is streamed to the client as the `question` event.
 4. **Retrieve.** `retrieve()` embeds the standalone question with `embed_query()` and calls `store.search()`, which asks Chroma for the `TOP_K` (5) nearest chunks by cosine distance. We convert distance to a similarity score (`1 - distance`, higher is better).
 5. **Build the grounded prompt.** `prompts.py` → `build_answer_prompt()`:
@@ -62,7 +62,7 @@ SSE is one-way server→client streaming over plain HTTP: the response is `text/
 
 ## Part 3: Memory storage
 
-`app/db.py` creates four SQLite tables: `documents`, `sessions`, `messages` (role, content, sources JSON, timestamp) and `meta`. `get_db()` is a context manager that opens a connection, commits on success and always closes it.
+`app/db/session.py` creates four SQLite tables: `documents`, `sessions`, `messages` (role, content, sources JSON, timestamp) and `meta`. `get_db()` is a context manager that opens a connection, commits on success and always closes it.
 
 The frontend generates a session id with `crypto.randomUUID()` and keeps it in localStorage, so refreshing the page restores the chat via `GET /sessions/{id}/messages`. "New chat" just makes a new id. Old chats stay in the database.
 

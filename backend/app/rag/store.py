@@ -1,13 +1,11 @@
-"""Vector store (ChromaDB) for chunks + a SQLite registry of uploaded documents."""
-
 import uuid
 from functools import lru_cache
 
 import chromadb
 from chromadb.config import Settings
 
-from app import config
-from app.db import get_db
+from app.core import config
+from app.db.session import get_db
 from app.llm import LLMProvider, ProviderError
 from app.rag.chunking import Chunk
 
@@ -22,11 +20,7 @@ def _client(path: str):
 
 
 def _collection():
-    # Cosine distance: 0 = same direction (very similar), 2 = opposite
     return _client(str(config.CHROMA_DIR)).get_or_create_collection("chunks", metadata={"hnsw:space": "cosine"})
-
-
-# ---------- embedding model bookkeeping ----------
 
 
 def get_index_embedding_id() -> str | None:
@@ -36,7 +30,6 @@ def get_index_embedding_id() -> str | None:
 
 
 def index_warning(provider_embedding_id: str) -> str | None:
-    """A message if the stored vectors came from a different embedding model than the current one."""
     stored = get_index_embedding_id()
     if stored and stored != provider_embedding_id and list_documents():
         return (
@@ -48,19 +41,14 @@ def index_warning(provider_embedding_id: str) -> str | None:
 
 
 def ensure_compatible(provider: LLMProvider) -> None:
-    """Refuse to mix embeddings from different models in one index."""
     warning = index_warning(provider.embedding_id)
     if warning:
         raise IndexMismatchError(warning)
     stored = get_index_embedding_id()
     if stored and stored != provider.embedding_id:
-        # Index is empty but was sized for another model: start a fresh collection
         _client(str(config.CHROMA_DIR)).delete_collection("chunks")
     with get_db() as db:
         db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('embedding_id', ?)", (provider.embedding_id,))
-
-
-# ---------- documents ----------
 
 
 def add_document(name: str, page_count: int, chunks: list[Chunk], vectors: list[list[float]]) -> dict:
@@ -91,11 +79,7 @@ def delete_document(doc_id: str) -> bool:
     return bool(deleted)
 
 
-# ---------- search ----------
-
-
 def search(query_vector: list[float], k: int) -> list[dict]:
-    """Return the k chunks closest to the query vector, best first."""
     collection = _collection()
     if collection.count() == 0:
         return []
@@ -106,7 +90,7 @@ def search(query_vector: list[float], k: int) -> list[dict]:
             "document_id": meta["doc_id"],
             "page": meta["page"],
             "text": text,
-            "score": round(1 - distance, 4),  # cosine similarity: higher = more relevant
+            "score": round(1 - distance, 4),
         }
         for text, meta, distance in zip(result["documents"][0], result["metadatas"][0], result["distances"][0])
     ]

@@ -1,5 +1,3 @@
-"""All prompt text lives here, so it's easy to read and tweak."""
-
 import re
 
 NOT_FOUND = "I couldn't find that in the uploaded documents."
@@ -19,7 +17,6 @@ Rules:
 4. If the message is only a greeting, thanks or small talk (not a request for information), reply in one or two friendly sentences: say you answer questions about the uploaded documents and name them. Don't use the excerpts or cite anything. This never permits answering factual questions from outside knowledge.
 5. Be concise. Use short paragraphs or bullet points. Never invent figures, dates or names."""
 
-# Matches a citation like [report.pdf, p. 12] or [report.pdf, p. 11, 12]
 CITATION = re.compile(r"\[[^\]\n]+,\s*pp?\.\s*\d+")
 
 
@@ -36,7 +33,6 @@ def build_rewrite_prompt(history: list[dict], question: str) -> str:
 
 
 def build_answer_prompt(question: str, chunks: list[dict], history: list[dict], documents: list[str]) -> str:
-    """Uploaded document names + context excerpts (each labelled with its source) + recent chat + the question."""
     context = "\n\n".join(f"--- [{c['document']}, p. {c['page']}] ---\n{c['text']}" for c in chunks)
     parts = [f"Uploaded documents: {', '.join(documents)}", f"Context excerpts:\n{context}"]
     if history:

@@ -1,5 +1,3 @@
-"""The interface every model provider implements, plus shared errors and retry logic."""
-
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
@@ -9,20 +7,14 @@ T = TypeVar("T")
 
 
 class ProviderError(Exception):
-    """Any failure talking to the model provider. `status` becomes the HTTP status code."""
-
     status = 502
 
 
 class ConfigError(ProviderError):
-    """Provider is not configured, e.g. missing API key."""
-
     status = 503
 
 
 class RateLimitError(ProviderError):
-    """Provider returned 429 (free-tier quota hit) even after retrying."""
-
     status = 429
 
 
@@ -33,24 +25,23 @@ class LLMProvider(ABC):
 
     @property
     def embedding_id(self) -> str:
-        """Identifies the embedding space. Vectors from different ids can't be compared."""
         return f"{self.name}:{self.embed_model}"
 
     @abstractmethod
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        """Embed chunks of a document (batched)."""
+        ...
 
     @abstractmethod
     def embed_query(self, text: str) -> list[float]:
-        """Embed a search query."""
+        ...
 
     @abstractmethod
     def generate(self, system: str, prompt: str) -> str:
-        """Return a complete answer in one go."""
+        ...
 
     @abstractmethod
     def stream(self, system: str, prompt: str) -> Iterator[str]:
-        """Yield the answer piece by piece as the model produces it."""
+        ...
 
 
 def with_retry(
@@ -60,12 +51,6 @@ def with_retry(
     base_delay: float = 2.0,
     retry_after: Callable[[Exception], float | None] = lambda e: None,
 ) -> T:
-    """Call fn(); on a rate-limit error wait, then try again.
-
-    The wait is what the provider asked for (`retry_after`), if it said,
-    otherwise 2s, 4s, 8s... Any other error is raised straight away.
-    After the last attempt we raise RateLimitError.
-    """
     for attempt in range(attempts):
         try:
             return fn()
@@ -75,7 +60,7 @@ def with_retry(
             if attempt == attempts - 1:
                 raise RateLimitError("The model provider's rate limit was hit. Wait a minute and try again.") from e
             delay = retry_after(e) or base_delay * 2**attempt
-            time.sleep(min(delay + 1, 65))  # +1s margin, never more than ~1 minute
+            time.sleep(min(delay + 1, 65))
     raise AssertionError("unreachable")
 
 

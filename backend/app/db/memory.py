@@ -1,8 +1,6 @@
-"""Conversation memory: every chat message is saved to SQLite, grouped by session."""
-
 import json
 
-from app.db import get_db
+from app.db.session import get_db
 
 
 def add_message(session_id: str, role: str, content: str, sources: list[dict] | None = None) -> None:
@@ -15,7 +13,6 @@ def add_message(session_id: str, role: str, content: str, sources: list[dict] | 
 
 
 def get_messages(session_id: str, limit: int | None = None) -> list[dict]:
-    """Messages oldest-first. With `limit`, only the most recent `limit` messages."""
     with get_db() as db:
         rows = db.execute(
             "SELECT role, content, sources, created_at FROM messages WHERE session_id = ? ORDER BY id DESC LIMIT ?",

@@ -16,7 +16,6 @@ def test_chunks_respect_size_and_overlap():
     assert len(chunks) > 5
     assert all(len(c) <= 800 for c in chunks)
     for prev, nxt in zip(chunks, chunks[1:]):
-        # the start of each chunk repeats text from the end of the previous one
         assert nxt[:40] in prev
 
 

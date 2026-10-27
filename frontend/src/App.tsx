@@ -10,9 +10,7 @@ function loadSessionId(): string {
   try {
     const saved = localStorage.getItem(SESSION_KEY);
     if (saved) return saved;
-  } catch {
-    /* storage unavailable */
-  }
+  } catch {}
   return newSessionId();
 }
 
@@ -20,9 +18,7 @@ function newSessionId(): string {
   const id = crypto.randomUUID();
   try {
     localStorage.setItem(SESSION_KEY, id);
-  } catch {
-    /* storage unavailable */
-  }
+  } catch {}
   return id;
 }
 
@@ -52,9 +48,7 @@ export default function App() {
     document.documentElement.classList.toggle("dark", next);
     try {
       localStorage.setItem("pda-theme", next ? "dark" : "light");
-    } catch {
-      /* storage unavailable */
-    }
+    } catch {}
   }
 
   const refreshHealth = useCallback(() => {
